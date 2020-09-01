@@ -29,13 +29,7 @@ fn convert(s: &str) -> Option<&str> {
 }
 
 fn apply_productions(s: &str) -> &str {
-    if let Some(result) = grow(s) {
-        result
-    } else if let Some(result) = convert(s) {
-        result
-    } else {
-        s
-    }
+    grow(s).or(convert(s)).unwrap_or(s)
 }
 
 fn step(s: &str) -> String {
