@@ -1,15 +1,6 @@
 use std::rc::Rc;
 
 fn main() {
-    println!("Hello, world!");
-    let axiom = "A";
-    println!(
-        "Axiom: {}, P1: {}, P2: {}, P3: {}",
-        axiom,
-        step(axiom),
-        step(&step(axiom)),
-        step(&step(&step(axiom)))
-    );
     let algae = LSystem::new(
         vec![Algae::A],
         vec![
@@ -76,30 +67,4 @@ fn step2<Alphabet: Copy>(
         .find(|res| res.is_some())
         .unwrap_or_else(|| Some(vec![*symbol]))
         .unwrap()
-}
-
-fn grow(s: &str) -> Option<&str> {
-    if s == "A" {
-        Some("AB")
-    } else {
-        None
-    }
-}
-
-fn convert(s: &str) -> Option<&str> {
-    if s == "B" {
-        Some("A")
-    } else {
-        None
-    }
-}
-
-fn apply_productions(s: &str) -> &str {
-    grow(s).or(convert(s)).unwrap_or(s)
-}
-
-fn step(s: &str) -> String {
-    s.split("")
-        .map(apply_productions)
-        .fold(String::new(), |a, b| a + b)
 }
