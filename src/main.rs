@@ -50,14 +50,14 @@ impl<Alphabet: Clone + Copy> LSystem<Alphabet> {
             symbols: self
                 .symbols
                 .iter()
-                .flat_map(|symbol| step2(symbol, &self.productions))
+                .flat_map(|symbol| step(symbol, &self.productions))
                 .collect(),
             productions: self.productions.clone(),
         }
     }
 }
 
-fn step2<Alphabet: Copy>(
+fn step<Alphabet: Copy>(
     symbol: &Alphabet,
     productions: &Vec<Rc<dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>>,
 ) -> Vec<Alphabet> {
