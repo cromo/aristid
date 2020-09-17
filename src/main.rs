@@ -71,6 +71,21 @@ fn main() {
         koch_curve.apply().apply().symbols,
         koch_curve.apply().apply().apply().symbols
     );
+
+    let parametric = aristid::LSystem::new(
+        vec![Parametric::A(0, 2)],
+        vec![&|s| match s {
+            Parametric::A(x, y) if *x == 0u8 => {
+                Some(vec![Parametric::A(1, y + 1), Parametric::B(2, 3)])
+            }
+            _ => None,
+        }],
+    );
+    println!(
+        "Parametric:\nAxiom: {:?}\nP1: {:?}",
+        parametric.symbols,
+        parametric.apply().symbols,
+    );
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -92,4 +107,10 @@ enum KochCurve {
     F,
     Plus,
     Minus,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Parametric {
+    A(u8, u8),
+    B(u8, u8),
 }
