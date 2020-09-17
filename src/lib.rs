@@ -1,14 +1,12 @@
-use std::rc::Rc;
-
-pub struct LSystem<Alphabet> {
+pub struct LSystem<'a, Alphabet> {
   pub symbols: Vec<Alphabet>,
-  pub productions: Vec<Rc<dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>>,
+  pub productions: Vec<&'a dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>,
 }
 
-impl<Alphabet: Clone + Copy> LSystem<Alphabet> {
+impl<Alphabet: Copy> LSystem<'_, Alphabet> {
   pub fn new(
     axiom: Vec<Alphabet>,
-    productions: Vec<Rc<dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>>,
+    productions: Vec<&dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>,
   ) -> LSystem<Alphabet> {
     LSystem::<Alphabet> {
       symbols: axiom,
@@ -21,7 +19,7 @@ impl<Alphabet: Clone + Copy> LSystem<Alphabet> {
       symbols: self
         .symbols
         .iter()
-        .flat_map(|symbol| step(symbol, &self.productions))
+        .flat_map(|s| step(s, &self.productions))
         .collect(),
       productions: self.productions.clone(),
     }
@@ -30,7 +28,7 @@ impl<Alphabet: Clone + Copy> LSystem<Alphabet> {
 
 fn step<Alphabet: Copy>(
   symbol: &Alphabet,
-  productions: &Vec<Rc<dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>>,
+  productions: &Vec<&dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>,
 ) -> Vec<Alphabet> {
   productions
     .iter()
@@ -55,10 +53,10 @@ mod tests {
   fn no_applicable_rules_leaves_passes_original_symbol() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Rc::new(|s| match s {
+      vec![&|s| match s {
         Alphabet::B => Some(vec![Alphabet::C]),
         _ => None,
-      })],
+      }],
     );
     assert_eq!(vec![Alphabet::A], system.apply().symbols);
   }
@@ -67,10 +65,10 @@ mod tests {
   fn matching_rule_is_applied() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Rc::new(|s| match s {
+      vec![&|s| match s {
         Alphabet::A => Some(vec![Alphabet::B]),
         _ => None,
-      })],
+      }],
     );
     assert_eq!(vec![Alphabet::B], system.apply().symbols);
   }
@@ -80,14 +78,14 @@ mod tests {
     let system = LSystem::new(
       vec![Alphabet::A],
       vec![
-        Rc::new(|s| match s {
+        &|s| match s {
           Alphabet::A => Some(vec![Alphabet::B]),
           _ => None,
-        }),
-        Rc::new(|s| match s {
+        },
+        &|s| match s {
           Alphabet::A => Some(vec![Alphabet::C]),
           _ => None,
-        }),
+        },
       ],
     );
     assert_eq!(vec![Alphabet::B], system.apply().symbols);
@@ -97,10 +95,10 @@ mod tests {
   fn symbols_can_be_replaced_with_multiple_symbols() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Rc::new(|s| match s {
+      vec![&|s| match s {
         Alphabet::A => Some(vec![Alphabet::B, Alphabet::C]),
         _ => None,
-      })],
+      }],
     );
     assert_eq!(vec![Alphabet::B, Alphabet::C], system.apply().symbols);
   }
@@ -109,10 +107,10 @@ mod tests {
   fn symbols_can_be_relpaced_with_no_symbols() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Rc::new(|s| match s {
+      vec![&|s| match s {
         Alphabet::A => Some(vec![]),
         _ => None,
-      })],
+      }],
     );
     assert_eq!(Vec::<Alphabet>::new(), system.apply().symbols);
   }
@@ -122,14 +120,14 @@ mod tests {
     let system = LSystem::new(
       vec![Alphabet::A, Alphabet::B, Alphabet::A],
       vec![
-        Rc::new(|s| match s {
+        &|s| match s {
           Alphabet::A => Some(vec![Alphabet::B]),
           _ => None,
-        }),
-        Rc::new(|s| match s {
+        },
+        &|s| match s {
           Alphabet::B => Some(vec![Alphabet::C]),
           _ => None,
-        }),
+        },
       ],
     );
     assert_eq!(
