@@ -21,7 +21,6 @@ fn main() {
         algae.apply().apply().symbols,
         algae.apply().apply().apply().symbols
     );
-    println!("what is going on up there?");
 }
 
 #[derive(Clone, Copy, Debug)]
