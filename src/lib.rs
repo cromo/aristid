@@ -34,8 +34,8 @@ fn step<Alphabet: Copy>(
     .iter()
     .map(|p| p(symbol))
     .find(|res| res.is_some())
-    .unwrap_or_else(|| Some(vec![*symbol]))
-    .unwrap()
+    .flatten()
+    .unwrap_or_else(|| vec![*symbol])
 }
 
 #[cfg(test)]
