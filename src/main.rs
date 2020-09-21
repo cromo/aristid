@@ -2,14 +2,14 @@ fn main() {
     let algae = aristid::LSystem::new(
         vec![Algae::A],
         vec![
-            &|s| match s {
+            aristid::Production::ContextFree(&|s| match s {
                 Algae::A => Some(vec![Algae::A, Algae::B]),
                 _ => None,
-            },
-            &|s| match s {
+            }),
+            aristid::Production::ContextFree(&|s| match s {
                 Algae::B => Some(vec![Algae::A]),
                 _ => None,
-            },
+            }),
         ],
     );
     println!(
@@ -23,11 +23,11 @@ fn main() {
     let fractal_tree = aristid::LSystem::new(
         vec![BinaryTree::Zero],
         vec![
-            &|s| match s {
+            aristid::Production::ContextFree(&|s| match s {
                 BinaryTree::One => Some(vec![BinaryTree::One, BinaryTree::One]),
                 _ => None,
-            },
-            &|s| match s {
+            }),
+            aristid::Production::ContextFree(&|s| match s {
                 BinaryTree::Zero => Some(vec![
                     BinaryTree::One,
                     BinaryTree::Push,
@@ -36,7 +36,7 @@ fn main() {
                     BinaryTree::Zero,
                 ]),
                 _ => None,
-            },
+            }),
         ],
     );
     println!(
@@ -49,7 +49,7 @@ fn main() {
 
     let koch_curve = aristid::LSystem::new(
         vec![KochCurve::F],
-        vec![&|s| match s {
+        vec![aristid::Production::ContextFree(&|s| match s {
             KochCurve::F => Some(vec![
                 KochCurve::F,
                 KochCurve::Plus,
@@ -62,7 +62,7 @@ fn main() {
                 KochCurve::F,
             ]),
             _ => None,
-        }],
+        })],
     );
     println!(
         "Koch curve:\nAxiom: {:?}\nP1: {:?}\nP2: {:?}\nP3: {:?}",
@@ -74,12 +74,12 @@ fn main() {
 
     let parametric = aristid::LSystem::new(
         vec![Parametric::A(0, 2)],
-        vec![&|s| match s {
+        vec![aristid::Production::ContextFree(&|s| match s {
             Parametric::A(x, y) if *x == 0u8 => {
                 Some(vec![Parametric::A(1, y + 1), Parametric::B(2, 3)])
             }
             _ => None,
-        }],
+        })],
     );
     println!(
         "Parametric:\nAxiom: {:?}\nP1: {:?}",

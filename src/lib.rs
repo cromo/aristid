@@ -1,13 +1,15 @@
 pub struct LSystem<'a, Alphabet> {
   pub symbols: Vec<Alphabet>,
-  pub productions: Vec<&'a dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>,
+  pub productions: Vec<Production<'a, Alphabet>>,
+}
+
+#[derive(Clone, Copy)]
+pub enum Production<'a, Alphabet> {
+  ContextFree(&'a dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>),
 }
 
 impl<Alphabet: Copy> LSystem<'_, Alphabet> {
-  pub fn new(
-    axiom: Vec<Alphabet>,
-    productions: Vec<&dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>,
-  ) -> LSystem<Alphabet> {
+  pub fn new(axiom: Vec<Alphabet>, productions: Vec<Production<Alphabet>>) -> LSystem<Alphabet> {
     LSystem::<Alphabet> {
       symbols: axiom,
       productions,
@@ -28,11 +30,13 @@ impl<Alphabet: Copy> LSystem<'_, Alphabet> {
 
 fn step<Alphabet: Copy>(
   symbol: &Alphabet,
-  productions: &Vec<&dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>,
+  productions: &Vec<Production<Alphabet>>,
 ) -> Vec<Alphabet> {
   productions
     .iter()
-    .map(|p| p(symbol))
+    .map(|p| match p {
+      Production::ContextFree(f) => f(symbol),
+    })
     .find(|res| res.is_some())
     .flatten()
     .unwrap_or_else(|| vec![*symbol])
@@ -50,13 +54,13 @@ mod tests {
   }
 
   #[test]
-  fn no_applicable_rules_leaves_passes_original_symbol() {
+  fn no_matching_rules_produces_same_symbol() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![&|s| match s {
+      vec![Production::ContextFree(&|s| match s {
         Alphabet::B => Some(vec![Alphabet::C]),
         _ => None,
-      }],
+      })],
     );
     assert_eq!(vec![Alphabet::A], system.apply().symbols);
   }
@@ -65,10 +69,10 @@ mod tests {
   fn matching_rule_is_applied() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![&|s| match s {
+      vec![Production::ContextFree(&|s| match s {
         Alphabet::A => Some(vec![Alphabet::B]),
         _ => None,
-      }],
+      })],
     );
     assert_eq!(vec![Alphabet::B], system.apply().symbols);
   }
@@ -78,14 +82,14 @@ mod tests {
     let system = LSystem::new(
       vec![Alphabet::A],
       vec![
-        &|s| match s {
+        Production::ContextFree(&|s| match s {
           Alphabet::A => Some(vec![Alphabet::B]),
           _ => None,
-        },
-        &|s| match s {
+        }),
+        Production::ContextFree(&|s| match s {
           Alphabet::A => Some(vec![Alphabet::C]),
           _ => None,
-        },
+        }),
       ],
     );
     assert_eq!(vec![Alphabet::B], system.apply().symbols);
@@ -95,10 +99,10 @@ mod tests {
   fn symbols_can_be_replaced_with_multiple_symbols() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![&|s| match s {
+      vec![Production::ContextFree(&|s| match s {
         Alphabet::A => Some(vec![Alphabet::B, Alphabet::C]),
         _ => None,
-      }],
+      })],
     );
     assert_eq!(vec![Alphabet::B, Alphabet::C], system.apply().symbols);
   }
@@ -107,10 +111,10 @@ mod tests {
   fn symbols_can_be_relpaced_with_no_symbols() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![&|s| match s {
+      vec![Production::ContextFree(&|s| match s {
         Alphabet::A => Some(vec![]),
         _ => None,
-      }],
+      })],
     );
     assert_eq!(Vec::<Alphabet>::new(), system.apply().symbols);
   }
@@ -120,14 +124,14 @@ mod tests {
     let system = LSystem::new(
       vec![Alphabet::A, Alphabet::B, Alphabet::A],
       vec![
-        &|s| match s {
+        Production::ContextFree(&|s| match s {
           Alphabet::A => Some(vec![Alphabet::B]),
           _ => None,
-        },
-        &|s| match s {
+        }),
+        Production::ContextFree(&|s| match s {
           Alphabet::B => Some(vec![Alphabet::C]),
           _ => None,
-        },
+        }),
       ],
     );
     assert_eq!(
