@@ -1,3 +1,5 @@
+use std::iter;
+
 pub struct LSystem<'a, Alphabet> {
   pub symbols: Vec<Alphabet>,
   pub productions: Vec<Production<'a, Alphabet>>,
@@ -6,6 +8,9 @@ pub struct LSystem<'a, Alphabet> {
 #[derive(Clone, Copy)]
 pub enum Production<'a, Alphabet> {
   ContextFree(&'a dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>),
+  PriorContext(&'a dyn Fn(&Alphabet, &Alphabet) -> Option<Vec<Alphabet>>),
+  FollowingContext(&'a dyn Fn(&Alphabet, &Alphabet) -> Option<Vec<Alphabet>>),
+  SurroundingContext(&'a dyn Fn(&Alphabet, &Alphabet, &Alphabet) -> Option<Vec<Alphabet>>),
 }
 
 impl<Alphabet: Copy> LSystem<'_, Alphabet> {
@@ -21,7 +26,19 @@ impl<Alphabet: Copy> LSystem<'_, Alphabet> {
       symbols: self
         .symbols
         .iter()
-        .flat_map(|s| step(s, &self.productions))
+        .zip(
+          iter::once(None).chain(self.symbols.iter().map(Some)).zip(
+            self
+              .symbols
+              .iter()
+              .skip(1)
+              .map(Some)
+              .chain(iter::once(None)),
+          ),
+        )
+        .flat_map(|(s, (predecessor, successor))| {
+          step(predecessor, s, successor, &self.productions)
+        })
         .collect(),
       productions: self.productions.clone(),
     }
@@ -29,13 +46,19 @@ impl<Alphabet: Copy> LSystem<'_, Alphabet> {
 }
 
 fn step<Alphabet: Copy>(
+  predecessor: Option<&Alphabet>,
   symbol: &Alphabet,
+  successor: Option<&Alphabet>,
   productions: &Vec<Production<Alphabet>>,
 ) -> Vec<Alphabet> {
   productions
     .iter()
-    .map(|p| match p {
-      Production::ContextFree(f) => f(symbol),
+    .map(|p| match (p, predecessor, symbol, successor) {
+      (Production::ContextFree(f), _, s, _) => f(s),
+      (Production::PriorContext(f), Some(pre), s, _) => f(pre, s),
+      (Production::FollowingContext(f), _, s, Some(post)) => f(s, post),
+      (Production::SurroundingContext(f), Some(pre), s, Some(post)) => f(pre, s, post),
+      _ => None,
     })
     .find(|res| res.is_some())
     .flatten()
@@ -136,6 +159,37 @@ mod tests {
     );
     assert_eq!(
       vec![Alphabet::B, Alphabet::C, Alphabet::B],
+      system.apply().symbols
+    );
+  }
+
+  #[test]
+  fn when_a_contextual_rule_doesnt_match_use_the_identity_rule() {
+    let system = LSystem::new(
+      vec![Alphabet::A],
+      vec![Production::SurroundingContext(
+        &|pre, s, post| match (pre, s, post) {
+          (Alphabet::B, Alphabet::A, Alphabet::C) => Some(vec![Alphabet::A, Alphabet::A]),
+          _ => None,
+        },
+      )],
+    );
+    assert_eq!(vec![Alphabet::A], system.apply().symbols);
+  }
+
+  #[test]
+  fn when_a_contextual_rule_matches_only_the_target_symbol_is_replaced() {
+    let system = LSystem::new(
+      vec![Alphabet::B, Alphabet::A, Alphabet::C],
+      vec![Production::SurroundingContext(
+        &|pre, s, post| match (pre, s, post) {
+          (Alphabet::B, Alphabet::A, Alphabet::C) => Some(vec![Alphabet::A, Alphabet::A]),
+          _ => None,
+        },
+      )],
+    );
+    assert_eq!(
+      vec![Alphabet::B, Alphabet::A, Alphabet::A, Alphabet::C],
       system.apply().symbols
     );
   }
