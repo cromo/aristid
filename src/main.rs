@@ -1,3 +1,5 @@
+use std::fmt;
+
 fn main() {
     let algae = aristid::LSystem::new(
         vec![Algae::A],
@@ -13,11 +15,11 @@ fn main() {
         ],
     );
     println!(
-        "Algae:\nAxiom: {:?}\nP1: {:?}\nP2: {:?}\nP3: {:?}",
-        algae.symbols,
-        algae.apply().symbols,
-        algae.apply().apply().symbols,
-        algae.apply().apply().apply().symbols
+        "Algae:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
+        to_string(&algae),
+        to_string(&algae.apply()),
+        to_string(&algae.apply().apply()),
+        to_string(&algae.apply().apply().apply())
     );
 
     let fractal_tree = aristid::LSystem::new(
@@ -40,11 +42,11 @@ fn main() {
         ],
     );
     println!(
-        "Binary tree:\nAxiom: {:?}\nP1: {:?}\nP2: {:?}\nP3: {:?}",
-        fractal_tree.symbols,
-        fractal_tree.apply().symbols,
-        fractal_tree.apply().apply().symbols,
-        fractal_tree.apply().apply().apply().symbols
+        "Binary tree:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
+        to_string(&fractal_tree),
+        to_string(&fractal_tree.apply()),
+        to_string(&fractal_tree.apply().apply()),
+        to_string(&fractal_tree.apply().apply().apply())
     );
 
     let koch_curve = aristid::LSystem::new(
@@ -65,11 +67,11 @@ fn main() {
         })],
     );
     println!(
-        "Koch curve:\nAxiom: {:?}\nP1: {:?}\nP2: {:?}\nP3: {:?}",
-        koch_curve.symbols,
-        koch_curve.apply().symbols,
-        koch_curve.apply().apply().symbols,
-        koch_curve.apply().apply().apply().symbols
+        "Koch curve:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
+        to_string(&koch_curve),
+        to_string(&koch_curve.apply()),
+        to_string(&koch_curve.apply().apply()),
+        to_string(&koch_curve.apply().apply().apply())
     );
 
     let parametric = aristid::LSystem::new(
@@ -82,16 +84,34 @@ fn main() {
         })],
     );
     println!(
-        "Parametric:\nAxiom: {:?}\nP1: {:?}",
-        parametric.symbols,
-        parametric.apply().symbols,
+        "Parametric:\n  Axiom: {}\n     P1: {}",
+        to_string(&parametric),
+        to_string(&parametric.apply()),
     );
+}
+
+fn to_string<T: fmt::Display>(system: &aristid::LSystem<T>) -> String {
+    system
+        .symbols
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 #[derive(Clone, Copy, Debug)]
 enum Algae {
     A,
     B,
+}
+
+impl fmt::Display for Algae {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Algae::A => write!(f, "A"),
+            Algae::B => write!(f, "B"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -102,6 +122,17 @@ enum BinaryTree {
     Pop,
 }
 
+impl fmt::Display for BinaryTree {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            BinaryTree::Zero => write!(f, "0"),
+            BinaryTree::One => write!(f, "1"),
+            BinaryTree::Push => write!(f, "["),
+            BinaryTree::Pop => write!(f, "]"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 enum KochCurve {
     F,
@@ -109,8 +140,27 @@ enum KochCurve {
     Minus,
 }
 
+impl fmt::Display for KochCurve {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            KochCurve::F => write!(f, "F"),
+            KochCurve::Plus => write!(f, "+"),
+            KochCurve::Minus => write!(f, "-"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Parametric {
     A(u8, u8),
     B(u8, u8),
+}
+
+impl fmt::Display for Parametric {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Parametric::A(x, y) => write!(f, "A({},{})", x, y),
+            Parametric::B(x, y) => write!(f, "B({},{})", x, y),
+        }
+    }
 }
