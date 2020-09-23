@@ -1,14 +1,14 @@
 use std::fmt;
 
 fn main() {
-    let algae = aristid::LSystem::new(
+    let algae = aristid::compiled::LSystem::new(
         vec![Algae::A],
         vec![
-            aristid::Production::ContextFree(&|s| match s {
+            aristid::compiled::Production::ContextFree(&|s| match s {
                 Algae::A => Some(vec![Algae::A, Algae::B]),
                 _ => None,
             }),
-            aristid::Production::ContextFree(&|s| match s {
+            aristid::compiled::Production::ContextFree(&|s| match s {
                 Algae::B => Some(vec![Algae::A]),
                 _ => None,
             }),
@@ -22,14 +22,14 @@ fn main() {
         to_string(&algae.apply().apply().apply())
     );
 
-    let fractal_tree = aristid::LSystem::new(
+    let fractal_tree = aristid::compiled::LSystem::new(
         vec![BinaryTree::Zero],
         vec![
-            aristid::Production::ContextFree(&|s| match s {
+            aristid::compiled::Production::ContextFree(&|s| match s {
                 BinaryTree::One => Some(vec![BinaryTree::One, BinaryTree::One]),
                 _ => None,
             }),
-            aristid::Production::ContextFree(&|s| match s {
+            aristid::compiled::Production::ContextFree(&|s| match s {
                 BinaryTree::Zero => Some(vec![
                     BinaryTree::One,
                     BinaryTree::Push,
@@ -49,9 +49,9 @@ fn main() {
         to_string(&fractal_tree.apply().apply().apply())
     );
 
-    let koch_curve = aristid::LSystem::new(
+    let koch_curve = aristid::compiled::LSystem::new(
         vec![KochCurve::F],
-        vec![aristid::Production::ContextFree(&|s| match s {
+        vec![aristid::compiled::Production::ContextFree(&|s| match s {
             KochCurve::F => Some(vec![
                 KochCurve::F,
                 KochCurve::Plus,
@@ -74,9 +74,9 @@ fn main() {
         to_string(&koch_curve.apply().apply().apply())
     );
 
-    let parametric = aristid::LSystem::new(
+    let parametric = aristid::compiled::LSystem::new(
         vec![Parametric::A(0, 2)],
-        vec![aristid::Production::ContextFree(&|s| match s {
+        vec![aristid::compiled::Production::ContextFree(&|s| match s {
             Parametric::A(x, y) if *x == 0u8 => {
                 Some(vec![Parametric::A(1, y + 1), Parametric::B(2, 3)])
             }
@@ -90,7 +90,7 @@ fn main() {
     );
 }
 
-fn to_string<T: fmt::Display>(system: &aristid::LSystem<T>) -> String {
+fn to_string<T: fmt::Display>(system: &aristid::compiled::LSystem<T>) -> String {
     system
         .symbols
         .iter()
