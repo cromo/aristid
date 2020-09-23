@@ -13,7 +13,7 @@ pub enum Production<'a, Alphabet> {
   SurroundingContext(&'a dyn Fn(&Alphabet, &Alphabet, &Alphabet) -> Option<Vec<Alphabet>>),
 }
 
-impl<Alphabet: Copy> LSystem<'_, Alphabet> {
+impl<Alphabet: Clone> LSystem<'_, Alphabet> {
   pub fn new(axiom: Vec<Alphabet>, productions: Vec<Production<Alphabet>>) -> LSystem<Alphabet> {
     LSystem::<Alphabet> {
       symbols: axiom,
@@ -45,7 +45,7 @@ impl<Alphabet: Copy> LSystem<'_, Alphabet> {
   }
 }
 
-fn step<Alphabet: Copy>(
+fn step<Alphabet: Clone>(
   predecessor: Option<&Alphabet>,
   symbol: &Alphabet,
   successor: Option<&Alphabet>,
@@ -62,7 +62,7 @@ fn step<Alphabet: Copy>(
     })
     .find(|res| res.is_some())
     .flatten()
-    .unwrap_or_else(|| vec![*symbol])
+    .unwrap_or_else(|| vec![symbol.clone()])
 }
 
 #[cfg(test)]
