@@ -1,93 +1,10 @@
 use std::fmt;
 
 fn main() {
-    let algae = aristid::compiled::LSystem::new(
-        vec![Algae::A],
-        vec![
-            aristid::compiled::Production::ContextFree(&|s| match s {
-                Algae::A => Some(vec![Algae::A, Algae::B]),
-                _ => None,
-            }),
-            aristid::compiled::Production::ContextFree(&|s| match s {
-                Algae::B => Some(vec![Algae::A]),
-                _ => None,
-            }),
-        ],
-    );
-    println!(
-        "Algae:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
-        to_string(&algae),
-        to_string(&algae.apply()),
-        to_string(&algae.apply().apply()),
-        to_string(&algae.apply().apply().apply())
-    );
-
-    let fractal_tree = aristid::compiled::LSystem::new(
-        vec![BinaryTree::Zero],
-        vec![
-            aristid::compiled::Production::ContextFree(&|s| match s {
-                BinaryTree::One => Some(vec![BinaryTree::One, BinaryTree::One]),
-                _ => None,
-            }),
-            aristid::compiled::Production::ContextFree(&|s| match s {
-                BinaryTree::Zero => Some(vec![
-                    BinaryTree::One,
-                    BinaryTree::Push,
-                    BinaryTree::Zero,
-                    BinaryTree::Pop,
-                    BinaryTree::Zero,
-                ]),
-                _ => None,
-            }),
-        ],
-    );
-    println!(
-        "Binary tree:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
-        to_string(&fractal_tree),
-        to_string(&fractal_tree.apply()),
-        to_string(&fractal_tree.apply().apply()),
-        to_string(&fractal_tree.apply().apply().apply())
-    );
-
-    let koch_curve = aristid::compiled::LSystem::new(
-        vec![KochCurve::F],
-        vec![aristid::compiled::Production::ContextFree(&|s| match s {
-            KochCurve::F => Some(vec![
-                KochCurve::F,
-                KochCurve::Plus,
-                KochCurve::F,
-                KochCurve::Minus,
-                KochCurve::F,
-                KochCurve::Minus,
-                KochCurve::F,
-                KochCurve::Plus,
-                KochCurve::F,
-            ]),
-            _ => None,
-        })],
-    );
-    println!(
-        "Koch curve:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
-        to_string(&koch_curve),
-        to_string(&koch_curve.apply()),
-        to_string(&koch_curve.apply().apply()),
-        to_string(&koch_curve.apply().apply().apply())
-    );
-
-    let parametric = aristid::compiled::LSystem::new(
-        vec![Parametric::A(0, 2)],
-        vec![aristid::compiled::Production::ContextFree(&|s| match s {
-            Parametric::A(x, y) if *x == 0u8 => {
-                Some(vec![Parametric::A(1, y + 1), Parametric::B(2, 3)])
-            }
-            _ => None,
-        })],
-    );
-    println!(
-        "Parametric:\n  Axiom: {}\n     P1: {}",
-        to_string(&parametric),
-        to_string(&parametric.apply()),
-    );
+    run_algae();
+    run_fractal_tree();
+    run_koch_curve();
+    run_parametric();
 }
 
 fn to_string<T: fmt::Display>(system: &aristid::compiled::LSystem<T>) -> String {
@@ -114,6 +31,29 @@ impl fmt::Display for Algae {
     }
 }
 
+fn run_algae() {
+    let algae = aristid::compiled::LSystem::new(
+        vec![Algae::A],
+        vec![
+            aristid::compiled::Production::ContextFree(&|s| match s {
+                Algae::A => Some(vec![Algae::A, Algae::B]),
+                _ => None,
+            }),
+            aristid::compiled::Production::ContextFree(&|s| match s {
+                Algae::B => Some(vec![Algae::A]),
+                _ => None,
+            }),
+        ],
+    );
+    println!(
+        "Algae:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
+        to_string(&algae),
+        to_string(&algae.apply()),
+        to_string(&algae.apply().apply()),
+        to_string(&algae.apply().apply().apply())
+    );
+}
+
 #[derive(Clone, Copy, Debug)]
 enum BinaryTree {
     Zero,
@@ -133,6 +73,35 @@ impl fmt::Display for BinaryTree {
     }
 }
 
+fn run_fractal_tree() {
+    let fractal_tree = aristid::compiled::LSystem::new(
+        vec![BinaryTree::Zero],
+        vec![
+            aristid::compiled::Production::ContextFree(&|s| match s {
+                BinaryTree::One => Some(vec![BinaryTree::One, BinaryTree::One]),
+                _ => None,
+            }),
+            aristid::compiled::Production::ContextFree(&|s| match s {
+                BinaryTree::Zero => Some(vec![
+                    BinaryTree::One,
+                    BinaryTree::Push,
+                    BinaryTree::Zero,
+                    BinaryTree::Pop,
+                    BinaryTree::Zero,
+                ]),
+                _ => None,
+            }),
+        ],
+    );
+    println!(
+        "Binary tree:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
+        to_string(&fractal_tree),
+        to_string(&fractal_tree.apply()),
+        to_string(&fractal_tree.apply().apply()),
+        to_string(&fractal_tree.apply().apply().apply())
+    );
+}
+
 #[derive(Clone, Copy, Debug)]
 enum KochCurve {
     F,
@@ -150,6 +119,33 @@ impl fmt::Display for KochCurve {
     }
 }
 
+fn run_koch_curve() {
+    let koch_curve = aristid::compiled::LSystem::new(
+        vec![KochCurve::F],
+        vec![aristid::compiled::Production::ContextFree(&|s| match s {
+            KochCurve::F => Some(vec![
+                KochCurve::F,
+                KochCurve::Plus,
+                KochCurve::F,
+                KochCurve::Minus,
+                KochCurve::F,
+                KochCurve::Minus,
+                KochCurve::F,
+                KochCurve::Plus,
+                KochCurve::F,
+            ]),
+            _ => None,
+        })],
+    );
+    println!(
+        "Koch curve:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
+        to_string(&koch_curve),
+        to_string(&koch_curve.apply()),
+        to_string(&koch_curve.apply().apply()),
+        to_string(&koch_curve.apply().apply().apply())
+    );
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Parametric {
     A(u8, u8),
@@ -163,4 +159,21 @@ impl fmt::Display for Parametric {
             Parametric::B(x, y) => write!(f, "B({},{})", x, y),
         }
     }
+}
+
+fn run_parametric() {
+    let parametric = aristid::compiled::LSystem::new(
+        vec![Parametric::A(0, 2)],
+        vec![aristid::compiled::Production::ContextFree(&|s| match s {
+            Parametric::A(x, y) if *x == 0u8 => {
+                Some(vec![Parametric::A(1, y + 1), Parametric::B(2, 3)])
+            }
+            _ => None,
+        })],
+    );
+    println!(
+        "Parametric:\n  Axiom: {}\n     P1: {}",
+        to_string(&parametric),
+        to_string(&parametric.apply()),
+    );
 }
