@@ -1,23 +1,23 @@
 use std::iter;
+use std::sync::Arc;
 
-pub struct LSystem<'a, Alphabet> {
+pub struct LSystem<Alphabet> {
   pub symbols: Vec<Alphabet>,
-  pub productions: Vec<Production<'a, Alphabet>>,
+  pub productions: Arc<Vec<Production<Alphabet>>>,
 }
 
-#[derive(Clone, Copy)]
-pub enum Production<'a, Alphabet> {
-  ContextFree(&'a dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>),
-  PriorContext(&'a dyn Fn(&Alphabet, &Alphabet) -> Option<Vec<Alphabet>>),
-  FollowingContext(&'a dyn Fn(&Alphabet, &Alphabet) -> Option<Vec<Alphabet>>),
-  SurroundingContext(&'a dyn Fn(&Alphabet, &Alphabet, &Alphabet) -> Option<Vec<Alphabet>>),
+pub enum Production<Alphabet> {
+  ContextFree(Box<dyn Fn(&Alphabet) -> Option<Vec<Alphabet>>>),
+  PriorContext(Box<dyn Fn(&Alphabet, &Alphabet) -> Option<Vec<Alphabet>>>),
+  FollowingContext(Box<dyn Fn(&Alphabet, &Alphabet) -> Option<Vec<Alphabet>>>),
+  SurroundingContext(Box<dyn Fn(&Alphabet, &Alphabet, &Alphabet) -> Option<Vec<Alphabet>>>),
 }
 
-impl<Alphabet: Clone> LSystem<'_, Alphabet> {
+impl<Alphabet: Clone> LSystem<Alphabet> {
   pub fn new(axiom: Vec<Alphabet>, productions: Vec<Production<Alphabet>>) -> LSystem<Alphabet> {
     LSystem::<Alphabet> {
       symbols: axiom,
-      productions,
+      productions: Arc::new(productions),
     }
   }
 
@@ -80,10 +80,10 @@ mod tests {
   fn no_matching_rules_produces_same_symbol() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Production::ContextFree(&|s| match s {
+      vec![Production::ContextFree(Box::new(|s| match s {
         Alphabet::B => Some(vec![Alphabet::C]),
         _ => None,
-      })],
+      }))],
     );
     assert_eq!(vec![Alphabet::A], system.apply().symbols);
   }
@@ -92,10 +92,10 @@ mod tests {
   fn matching_rule_is_applied() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Production::ContextFree(&|s| match s {
+      vec![Production::ContextFree(Box::new(|s| match s {
         Alphabet::A => Some(vec![Alphabet::B]),
         _ => None,
-      })],
+      }))],
     );
     assert_eq!(vec![Alphabet::B], system.apply().symbols);
   }
@@ -105,14 +105,14 @@ mod tests {
     let system = LSystem::new(
       vec![Alphabet::A],
       vec![
-        Production::ContextFree(&|s| match s {
+        Production::ContextFree(Box::new(|s| match s {
           Alphabet::A => Some(vec![Alphabet::B]),
           _ => None,
-        }),
-        Production::ContextFree(&|s| match s {
+        })),
+        Production::ContextFree(Box::new(|s| match s {
           Alphabet::A => Some(vec![Alphabet::C]),
           _ => None,
-        }),
+        })),
       ],
     );
     assert_eq!(vec![Alphabet::B], system.apply().symbols);
@@ -122,10 +122,10 @@ mod tests {
   fn symbols_can_be_replaced_with_multiple_symbols() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Production::ContextFree(&|s| match s {
+      vec![Production::ContextFree(Box::new(|s| match s {
         Alphabet::A => Some(vec![Alphabet::B, Alphabet::C]),
         _ => None,
-      })],
+      }))],
     );
     assert_eq!(vec![Alphabet::B, Alphabet::C], system.apply().symbols);
   }
@@ -134,10 +134,10 @@ mod tests {
   fn symbols_can_be_relpaced_with_no_symbols() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Production::ContextFree(&|s| match s {
+      vec![Production::ContextFree(Box::new(|s| match s {
         Alphabet::A => Some(vec![]),
         _ => None,
-      })],
+      }))],
     );
     assert_eq!(Vec::<Alphabet>::new(), system.apply().symbols);
   }
@@ -147,14 +147,14 @@ mod tests {
     let system = LSystem::new(
       vec![Alphabet::A, Alphabet::B, Alphabet::A],
       vec![
-        Production::ContextFree(&|s| match s {
+        Production::ContextFree(Box::new(|s| match s {
           Alphabet::A => Some(vec![Alphabet::B]),
           _ => None,
-        }),
-        Production::ContextFree(&|s| match s {
+        })),
+        Production::ContextFree(Box::new(|s| match s {
           Alphabet::B => Some(vec![Alphabet::C]),
           _ => None,
-        }),
+        })),
       ],
     );
     assert_eq!(
@@ -167,12 +167,12 @@ mod tests {
   fn when_a_contextual_rule_doesnt_match_use_the_identity_rule() {
     let system = LSystem::new(
       vec![Alphabet::A],
-      vec![Production::SurroundingContext(
-        &|pre, s, post| match (pre, s, post) {
+      vec![Production::SurroundingContext(Box::new(
+        |pre, s, post| match (pre, s, post) {
           (Alphabet::B, Alphabet::A, Alphabet::C) => Some(vec![Alphabet::A, Alphabet::A]),
           _ => None,
         },
-      )],
+      ))],
     );
     assert_eq!(vec![Alphabet::A], system.apply().symbols);
   }
@@ -181,12 +181,12 @@ mod tests {
   fn when_a_contextual_rule_matches_only_the_target_symbol_is_replaced() {
     let system = LSystem::new(
       vec![Alphabet::B, Alphabet::A, Alphabet::C],
-      vec![Production::SurroundingContext(
-        &|pre, s, post| match (pre, s, post) {
+      vec![Production::SurroundingContext(Box::new(
+        |pre, s, post| match (pre, s, post) {
           (Alphabet::B, Alphabet::A, Alphabet::C) => Some(vec![Alphabet::A, Alphabet::A]),
           _ => None,
         },
-      )],
+      ))],
     );
     assert_eq!(
       vec![Alphabet::B, Alphabet::A, Alphabet::A, Alphabet::C],

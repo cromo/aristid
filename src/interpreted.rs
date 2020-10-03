@@ -1,12 +1,115 @@
+use crate::compiled;
+use std::fmt;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Symbol {
+  pub label: String,
+  // An ordered collection of values (doubles?) needs to be added.
+}
+
+impl fmt::Display for Symbol {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{}", self.label)
+  }
+}
+
+pub struct Production {
+  // This needs optional symbol patterns for predecessor and successor.
+  pub pattern: SymbolPattern,
+  // This needs an optional guard (Boolean expression).
+  pub replacement_expression: Vec<SymbolExpression>,
+}
+
+pub struct SymbolPattern {
+  pub label: String,
+  // An ordered collection of values/labels needs to be added.
+}
+
+pub struct SymbolExpression {
+  pub label: String,
+  // Need to add an ordered collection of arithmetic expressions.
+}
+
+fn pattern_matches(pattern: &SymbolPattern, symbol: &Symbol) -> bool {
+  pattern.label == symbol.label
+}
+
+fn eval(expression: &SymbolExpression) -> Symbol {
+  Symbol {
+    label: expression.label.clone(),
+  }
+}
+
+pub fn new(axiom: Vec<Symbol>, productions: Vec<Production>) -> compiled::LSystem<Symbol> {
+  compiled::LSystem::new(
+    axiom,
+    productions
+      .into_iter()
+      .map(|p| {
+        compiled::Production::ContextFree(Box::new(move |s| {
+          if pattern_matches(&p.pattern, s) {
+            Some(p.replacement_expression.iter().map(eval).collect())
+          } else {
+            None
+          }
+        }))
+      })
+      .collect(),
+  )
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn no_matching_rules_produces_same_symbol() {
+    let system = new(
+      vec![Symbol {
+        label: String::from("A"),
+      }],
+      vec![Production {
+        pattern: SymbolPattern {
+          label: String::from("B"),
+        },
+        replacement_expression: vec![SymbolExpression {
+          label: String::from("C"),
+        }],
+      }],
+    );
+    assert_eq!(
+      vec![Symbol {
+        label: String::from("A")
+      }],
+      system.apply().symbols
+    );
+  }
+
+  #[test]
+  fn matching_rule_is_applied() {
+    let system = new(
+      vec![Symbol {
+        label: String::from("A"),
+      }],
+      vec![Production {
+        pattern: SymbolPattern {
+          label: String::from("A"),
+        },
+        replacement_expression: vec![SymbolExpression {
+          label: String::from("B"),
+        }],
+      }],
+    );
+    assert_eq!(
+      vec![Symbol {
+        label: String::from("B")
+      }],
+      system.apply().symbols
+    );
+  }
+}
+
 /*
-But a system is a sequence of symbols and a set of production rules (and
-technically an alphabet, but eh, that's implied)
-A Symbol, accounting for parametricity, is a label: String and a sequence of
-values (say, Vec<s32> to start with)
-A ProductionRule has three main parts: the pattern, the optional guard, and the
-replacementExpression
-The pattern can have three parts - the predecessor, the target, and the
-successor - only the target is mandatory
 Each one of those has a structure that is like a Symbol, but slightly different
 The Pattern is a label: String and a sequence of label: String or value: s32
 The interpreter in the static production rule underneath takes the provided
