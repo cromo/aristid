@@ -33,19 +33,6 @@ impl fmt::Display for Algae {
 }
 
 fn run_algae() {
-    // let algae = aristid::compiled::LSystem::new(
-    //     vec![Algae::A],
-    //     vec![
-    //         aristid::compiled::Production::ContextFree(&|s| match s {
-    //             Algae::A => Some(vec![Algae::A, Algae::B]),
-    //             _ => None,
-    //         }),
-    //         aristid::compiled::Production::ContextFree(&|s| match s {
-    //             Algae::B => Some(vec![Algae::A]),
-    //             _ => None,
-    //         }),
-    //     ],
-    // );
     let algae = new_algae();
     println!(
         "Algae:\n  Axiom: {}\n     P1: {}\n     P2: {}\n     P3: {}",
@@ -213,9 +200,13 @@ fn run_interpreted_dragon_curve() {
         ],
         vec![
             Production {
-                pattern: SymbolPattern {
-                    label: String::from("X"),
-                },
+                pattern: (
+                    None,
+                    SymbolPattern {
+                        label: String::from("X"),
+                    },
+                    None,
+                ),
                 replacement_expression: vec![
                     SymbolExpression {
                         label: String::from("X"),
@@ -235,9 +226,13 @@ fn run_interpreted_dragon_curve() {
                 ],
             },
             Production {
-                pattern: SymbolPattern {
-                    label: String::from("Y"),
-                },
+                pattern: (
+                    None,
+                    SymbolPattern {
+                        label: String::from("Y"),
+                    },
+                    None,
+                ),
                 replacement_expression: vec![
                     SymbolExpression {
                         label: String::from("-"),

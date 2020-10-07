@@ -16,11 +16,10 @@ impl fmt::Display for Symbol {
 }
 
 pub struct Production {
-  // This needs optional symbol patterns for predecessor and successor to enable
-  // context sensitivity.
-  pub pattern: SymbolPattern,
+  pub pattern: (Option<SymbolPattern>, SymbolPattern, Option<SymbolPattern>),
   // This needs an optional guard, which will be a boolean expression (which is
-  // distinct from a SymbolExpression).
+  // distinct from a SymbolExpression). This is an extension that's only useful
+  // with parametricity.
   pub replacement_expression: Vec<SymbolExpression>,
 }
 
@@ -65,18 +64,46 @@ pub fn new(axiom: Vec<Symbol>, productions: Vec<Production>) -> compiled::LSyste
     axiom,
     productions
       .into_iter()
-      .map(|p| {
-        // The kind of compiled::Production to use will need to change depending
-        // on whether the context patterns are present in the Production.
-        compiled::Production::ContextFree(Box::new(move |s| {
-          // After the environment is build up by pattern matching, it should
-          // use it to run the guard.
-          if pattern_matches(&p.pattern, s) {
-            Some(p.replacement_expression.iter().map(eval).collect())
-          } else {
-            None
-          }
-        }))
+      .map(|p| match (p.pattern, p.replacement_expression) {
+        ((None, target, None), replacement) => {
+          compiled::Production::ContextFree(Box::new(move |s| {
+            // After the environment is build up by pattern matching, it should
+            // use it to run the guard.
+            if pattern_matches(&target, s) {
+              Some(replacement.iter().map(eval).collect())
+            } else {
+              None
+            }
+          }))
+        }
+        ((Some(pre), target, None), replacement) => {
+          compiled::Production::PriorContext(Box::new(move |b, s| {
+            if pattern_matches(&pre, b) && pattern_matches(&target, s) {
+              Some(replacement.iter().map(eval).collect())
+            } else {
+              None
+            }
+          }))
+        }
+        ((None, target, Some(post)), replacement) => {
+          compiled::Production::FollowingContext(Box::new(move |s, a| {
+            if pattern_matches(&target, s) && pattern_matches(&post, a) {
+              Some(replacement.iter().map(eval).collect())
+            } else {
+              None
+            }
+          }))
+        }
+        ((Some(pre), target, Some(post)), replacement) => {
+          compiled::Production::SurroundingContext(Box::new(move |b, s, a| {
+            if pattern_matches(&pre, b) && pattern_matches(&target, s) && pattern_matches(&post, a)
+            {
+              Some(replacement.iter().map(eval).collect())
+            } else {
+              None
+            }
+          }))
+        }
       })
       .collect(),
   )
@@ -93,9 +120,13 @@ mod tests {
         label: String::from("A"),
       }],
       vec![Production {
-        pattern: SymbolPattern {
-          label: String::from("B"),
-        },
+        pattern: (
+          None,
+          SymbolPattern {
+            label: String::from("B"),
+          },
+          None,
+        ),
         replacement_expression: vec![SymbolExpression {
           label: String::from("C"),
         }],
@@ -116,9 +147,13 @@ mod tests {
         label: String::from("A"),
       }],
       vec![Production {
-        pattern: SymbolPattern {
-          label: String::from("A"),
-        },
+        pattern: (
+          None,
+          SymbolPattern {
+            label: String::from("A"),
+          },
+          None,
+        ),
         replacement_expression: vec![SymbolExpression {
           label: String::from("B"),
         }],
@@ -128,6 +163,61 @@ mod tests {
       vec![Symbol {
         label: String::from("B")
       }],
+      system.apply().symbols
+    );
+  }
+
+  #[test]
+  fn when_a_contextual_rule_matches_only_the_target_symbol_is_replaced() {
+    let system = new(
+      vec![
+        Symbol {
+          label: String::from("B"),
+        },
+        Symbol {
+          label: String::from("A"),
+        },
+        Symbol {
+          label: String::from("C"),
+        },
+      ],
+      vec![Production {
+        pattern: (
+          Some(SymbolPattern {
+            label: String::from("B"),
+          }),
+          SymbolPattern {
+            label: String::from("A"),
+          },
+          Some(SymbolPattern {
+            label: String::from("C"),
+          }),
+        ),
+        replacement_expression: vec![
+          SymbolExpression {
+            label: String::from("A"),
+          },
+          SymbolExpression {
+            label: String::from("A"),
+          },
+        ],
+      }],
+    );
+    assert_eq!(
+      vec![
+        Symbol {
+          label: String::from("B")
+        },
+        Symbol {
+          label: String::from("A")
+        },
+        Symbol {
+          label: String::from("A")
+        },
+        Symbol {
+          label: String::from("C")
+        },
+      ],
       system.apply().symbols
     );
   }
